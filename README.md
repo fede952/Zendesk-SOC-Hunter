@@ -158,3 +158,9 @@ Contains the styling for the Alert Box (.zh-alert-container).
     DOM Safety: The code is strictly typed to avoid innerHTML assignments, protecting against Cross-Site Scripting (XSS) attacks.
 
     Performance: Uses MutationObserver with debouncing to minimize CPU usage on heavy Single Page Applications (SPAs) like Zendesk.
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+Copyright © 2026 Federico Sella
