@@ -1,4 +1,6 @@
-console.log("🛡️ Hunter 23.0 - Tower Stack Fixed");
+console.log("🛡️ Hunter");
+
+const sys = (typeof chrome !== 'undefined') ? chrome : browser;
 
 const tContent = {
     it: { found: "TROVATO", none: "NESSUN INDICATORE", other: "+ altri", source: "Fonte", monitor_list: "Elementi Monitorati", detected_list: "Elementi Rilevati" },
@@ -68,10 +70,8 @@ function getShadowRoot() {
                 overflow: hidden;
                 pointer-events: auto; 
                 box-sizing: border-box;
-                /* Animazione fluida per l'allineamento */
                 transition: top 0.2s ease-out, left 0.2s ease-out;
             }
-            /* DRAGGING STATE: Disattiva transizione per movimento 1:1 */
             .zh-alert-container.zh-dragging {
                 transition: none !important;
                 z-index: 999999 !important;
@@ -112,13 +112,12 @@ function scanPage() {
   if (isScanning) return;
   isScanning = true;
 
-  if (typeof chrome === 'undefined') var chrome = browser;
-  if (!chrome.runtime?.id) { isScanning = false; return; }
+  if (!sys || !sys.runtime?.id) { isScanning = false; return; }
 
-  chrome.storage.local.get(['clientConfig', 'isPaused', 'lang'], (result) => {
+  sys.storage.local.get(['clientConfig', 'isPaused', 'lang'], (result) => {
     setTimeout(() => { isScanning = false; }, 500);
 
-    if (chrome.runtime.lastError || result.isPaused === true) {
+    if (sys.runtime.lastError || result.isPaused === true) {
         if (result.isPaused) removeAllAlerts();
         return;
     }
@@ -188,7 +187,6 @@ function scanPage() {
         }
     });
 
-    // Cleanup
     const shadow = getShadowRoot();
     shadow.querySelectorAll('.zh-alert-container').forEach(box => {
         if (!detectedClients.has(box.dataset.client)) box.remove();
@@ -209,7 +207,7 @@ function scanPage() {
 }
 
 // ==========================================
-// 4. UI RENDERER (Shadow DOM)
+// 4. UI RENDERER
 // ==========================================
 
 function showNoRulesWarning() {
@@ -249,7 +247,6 @@ function updateAlertForClient(client, matches, foundByName, sourcePage, stackInd
         box.className = 'zh-alert-container';
         box.dataset.client = client.name;
         
-        // default pos
         box.style.left = (window.innerWidth - 270) + "px";
         box.style.top = (window.innerHeight - 150) + "px";
         
@@ -267,9 +264,7 @@ function updateAlertForClient(client, matches, foundByName, sourcePage, stackInd
 
         if (isMaster) {
             box.classList.add('zh-master');
-            
-            if (typeof chrome === 'undefined') var chrome = browser;
-            chrome.storage.local.get(['uiPos'], (res) => {
+            sys.storage.local.get(['uiPos'], (res) => {
                 if (res.uiPos && res.uiPos.top && res.uiPos.top !== "auto") {
                     box.style.top = res.uiPos.top;
                     box.style.left = res.uiPos.left;
@@ -282,12 +277,10 @@ function updateAlertForClient(client, matches, foundByName, sourcePage, stackInd
             box.classList.add('zh-slave');
         }
     } else {
-        // Upgrade Role logic
         if (isMaster) {
             box.classList.add('zh-master');
             box.classList.remove('zh-slave');
-            if (typeof chrome === 'undefined') var chrome = browser;
-            chrome.storage.local.get(['uiPos'], (res) => {
+            sys.storage.local.get(['uiPos'], (res) => {
                  if(res.uiPos && res.uiPos.top && res.uiPos.top !== "auto") {
                      box.style.top = res.uiPos.top;
                      box.style.left = res.uiPos.left;
@@ -300,7 +293,6 @@ function updateAlertForClient(client, matches, foundByName, sourcePage, stackInd
         }
     }
 
-    // Colors & HTML
     const borderColor = isMatch ? '#28a745' : '#dc3545';
     const bgColor = isMatch ? '#f0fff4' : '#fff5f5';
     box.style.borderLeft = `6px solid ${borderColor}`;
@@ -332,7 +324,7 @@ function updateAlertForClient(client, matches, foundByName, sourcePage, stackInd
 }
 
 // ==========================================
-// 5. STACK LOGIC (TOWER UP)
+// 5. STACK LOGIC
 // ==========================================
 
 function alignSlaves() {
@@ -351,7 +343,7 @@ function alignSlaves() {
     
     let currentTop = mTop;
 
-    allBoxes.forEach((box, index) => {
+    allBoxes.forEach((box) => {
         if (box === master) {
             currentTop = mTop - GAP; 
             return;
@@ -370,7 +362,7 @@ function alignSlaves() {
 }
 
 // ==========================================
-// 6. DRAG LOGIC (ABSOLUTE MOUSE TRACKING)
+// 6. DRAG LOGIC
 // ==========================================
 
 function makeDraggable(element) {
@@ -384,30 +376,23 @@ function makeDraggable(element) {
         if (!path.some(el => el.classList && el.classList.contains('zh-header'))) return;
 
         e.preventDefault();
-        
         startX = e.clientX;
         startY = e.clientY;
-        
         initialLeft = element.offsetLeft;
         initialTop = element.offsetTop;
         
         element.classList.add('zh-dragging');
-        
         document.onmouseup = closeDragElement;
         document.onmousemove = elementDrag;
     }
 
     function elementDrag(e) {
         e.preventDefault();
-        
         const dx = e.clientX - startX;
         const dy = e.clientY - startY;
         
         element.style.top = (initialTop + dy) + "px";
         element.style.left = (initialLeft + dx) + "px";
-        
-        element.style.bottom = "auto"; 
-        element.style.right = "auto";
         
         requestAnimationFrame(alignSlaves); 
     }
@@ -422,10 +407,8 @@ function makeDraggable(element) {
 }
 
 function savePosition(el) {
-    if (typeof chrome === 'undefined') var chrome = browser;
-    if (!el.style.top || el.style.top === "auto") return;
-
-    chrome.storage.local.set({ 
+    if (!sys) return;
+    sys.storage.local.set({ 
         uiPos: { top: el.style.top, left: el.style.left, width: el.style.width, height: el.style.height } 
     });
 }
@@ -438,6 +421,5 @@ const observer = new MutationObserver(() => {
 });
 
 observer.observe(document.body, { childList: true, subtree: true });
-if (typeof chrome === 'undefined') var chrome = browser;
-chrome.storage.onChanged.addListener((c, n) => { if (n === 'local') scanPage(); });
+if (sys && sys.storage) sys.storage.onChanged.addListener((c, n) => { if (n === 'local') scanPage(); });
 setInterval(scanPage, 3000);

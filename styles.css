@@ -1,68 +1,58 @@
+#deleteAllBtn {
+    background: #fff5f5;
+    color: #dc3545;
+    border: 1px solid #dc3545;
+}
+#deleteAllBtn:hover {
+    background: #f8d7da;
+}
+
 /* --- ALERT BOX CONTAINER --- */
 .zh-alert-container {
-  position: fixed; /* Fixed position relative to the viewport */
+  position: absolute; 
   background: #fff;
   border-left: 6px solid #888;
   padding: 12px;
-  z-index: 2147483647; 
   box-shadow: 0 5px 20px rgba(0,0,0,0.3);
-  font-family: sans-serif;
+  font-family: 'Segoe UI', sans-serif;
   border-radius: 4px;
   font-size: 13px;
   color: #333;
   line-height: 1.3;
   min-width: 250px;
   min-height: 100px;
+  
+  bottom: 20px;
+  right: 20px;
+  top: auto;
+  left: auto;
 
-  /* Resizing capabilities */
   resize: both; 
   overflow: hidden; 
-
+  pointer-events: auto;
+  box-sizing: border-box;
+  
+  transition: top 0.2s ease-out, bottom 0.2s ease-out, right 0.2s ease-out, left 0.2s ease-out;
 }
 
-/* --- POPUP UI BUTTONS --- */
-.lang-btn {
-    background: transparent;
-    border: 1px solid #1f73b7;
-    color: #1f73b7;
-    font-size: 10px;
-    font-weight: bold;
-    padding: 2px 6px;
-    border-radius: 3px;
-    cursor: pointer;
-    margin-left: 10px;
-}
-.lang-btn:hover {
-    background: #e6f0f8;
+.zh-alert-container.zh-dragging {
+    transition: none !important;
+    opacity: 0.95;
+    box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+    z-index: 2147483647 !important;
+    cursor: grabbing;
 }
 
-/* --- STATUS COLORS --- */
-/* Green: Specific indicators (IPs/Strings) matched */
-.match-success { border-left-color: #28a745; background-color: #f0fff4; }
-/* Red: Only Client Name matched (Warning) */
-.match-fail { border-left-color: #dc3545; background-color: #fff5f5; }
-
-/* --- HEADER & CONTROLS --- */
-.zh-header { 
-    display: flex; 
-    justify-content: space-between; 
-    margin-bottom: 5px; 
-    border-bottom: 1px solid rgba(0,0,0,0.1); 
-    padding-bottom: 5px; 
-    cursor: move; 
-    user-select: none; 
-}
+.zh-header { display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 5px; cursor: grab; user-select: none; }
+.zh-alert-container.zh-dragging .zh-header { cursor: grabbing; }
 
 .zh-title { font-weight: 800; font-size: 14px; text-transform: uppercase; }
-.zh-close { cursor: pointer; font-weight: bold; padding: 0 5px;}
-
-/* --- CONTENT --- */
+.zh-close { cursor: pointer; font-weight: bold; padding: 0 5px; color: #999; }
+.zh-close:hover { color: #333; }
 .zh-reason { font-style: italic; color: #555; margin-bottom: 5px; display: block; }
 .zh-source { font-size: 10px; color: #999; margin-bottom: 5px; text-align: right; }
-
-/* --- BADGES --- */
-.zh-badge { padding: 4px; text-align: center; font-weight: bold; border-radius: 3px; font-size: 11px; margin-bottom: 5px;}
+.zh-badge { padding: 4px; text-align: center; font-weight: bold; border-radius: 3px; font-size: 11px; margin-bottom: 5px; border: 1px solid transparent; }
 .badge-ok { background: #28a745; color: white; }
 .badge-ko { background: #dc3545; color: white; }
-
-.zh-ips-list { font-family: monospace; font-size: 11px; background: rgba(255,255,255,0.7); border: 1px solid #ddd; padding: 5px; }
+.zh-ips-list { font-family: monospace; font-size: 11px; background: #f8f9fa; border: 1px solid #ddd; padding: 5px; margin-top: 5px; word-break: break-all; }
+.zh-warning-banner { position: absolute; top: 0; left: 0; width: 100%; background: #ffc107; color: #333; text-align: center; padding: 5px; font-weight: bold; font-size: 12px; z-index: 9999; cursor: pointer; pointer-events: auto; }

@@ -1,3 +1,5 @@
+const sys = (typeof chrome !== 'undefined') ? chrome : browser;
+
 const dom = {
     name: document.getElementById('inputName'),
     reason: document.getElementById('inputReason'),
@@ -12,7 +14,7 @@ const dom = {
     reset: document.getElementById('resetPosBtn'),
     export: document.getElementById('exportBtn'),
     import: document.getElementById('importBtn'),
-    deleteAll: document.getElementById('deleteAllBtn'), 
+    deleteAll: document.getElementById('deleteAllBtn'),
     fileInput: document.getElementById('fileInput'),
     l_org: document.getElementById('lbl_org'),
     l_reas: document.getElementById('lbl_reason'),
@@ -53,10 +55,9 @@ const i18n = {
 };
 
 let currentLang = 'it';
-if (typeof chrome === 'undefined') var chrome = browser;
 
 document.addEventListener('DOMContentLoaded', () => {
-    chrome.storage.local.get(['lang', 'isPaused'], (res) => {
+    sys.storage.local.get(['lang', 'isPaused'], (res) => {
         currentLang = res.lang || 'it';
         applyLang(currentLang);
         loadRules();
@@ -70,7 +71,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
 dom.toggle.addEventListener('change', () => {
     const isActive = dom.toggle.checked;
-    chrome.storage.local.set({ isPaused: !isActive }, () => updateStatus(isActive));
+    sys.storage.local.set({ isPaused: !isActive }, () => updateStatus(isActive));
 });
 
 dom.save.addEventListener('click', () => {
@@ -81,17 +82,17 @@ dom.save.addEventListener('click', () => {
     const rule = { name, reason: dom.reason.value.trim(), ips };
     const idx = parseInt(dom.editIdx.value);
 
-    chrome.storage.local.get(['clientConfig'], (res) => {
+    sys.storage.local.get(['clientConfig'], (res) => {
         let rules = res.clientConfig || [];
         if (idx >= 0) rules[idx] = rule; else rules.push(rule);
-        chrome.storage.local.set({ clientConfig: rules }, () => { resetForm(); loadRules(); });
+        sys.storage.local.set({ clientConfig: rules }, () => { resetForm(); loadRules(); });
     });
 });
 
 if (dom.deleteAll) {
     dom.deleteAll.onclick = () => {
         if (confirm(i18n[currentLang].msg_confirm_del_all)) {
-            chrome.storage.local.set({ clientConfig: [] }, () => {
+            sys.storage.local.set({ clientConfig: [] }, () => {
                 dom.list.innerHTML = ''; 
                 loadRules(); 
                 alert(i18n[currentLang].msg_deleted_all);
@@ -101,12 +102,12 @@ if (dom.deleteAll) {
 }
 
 dom.reset.onclick = () => {
-    chrome.storage.local.remove(['uiPos'], () => alert(i18n[currentLang].msg_reset));
+    sys.storage.local.remove(['uiPos'], () => alert(i18n[currentLang].msg_reset));
 };
 
 dom.lang.onclick = () => {
     currentLang = currentLang === 'it' ? 'en' : 'it';
-    chrome.storage.local.set({ lang: currentLang }, () => {
+    sys.storage.local.set({ lang: currentLang }, () => {
         applyLang(currentLang);
         loadRules();
         updateStatus(dom.toggle.checked);
@@ -117,7 +118,7 @@ dom.cancel.onclick = resetForm;
 
 // Export
 dom.export.onclick = () => {
-    chrome.storage.local.get(['clientConfig'], (res) => {
+    sys.storage.local.get(['clientConfig'], (res) => {
         const rules = res.clientConfig || [];
         const dataStr = "data:text/json;charset=utf-8," + encodeURIComponent(JSON.stringify(rules, null, 2));
         const dl = document.createElement('a');
@@ -129,10 +130,13 @@ dom.export.onclick = () => {
 
 // Import
 dom.import.onclick = () => {
-    // Fix Firefox popup close
     if (window.innerWidth < 500) {
-        chrome.tabs.create({ url: chrome.runtime.getURL("popup.html") });
-        window.close();
+        if (sys.tabs && sys.tabs.create) {
+            sys.tabs.create({ url: sys.runtime.getURL("popup.html") });
+            window.close();
+        } else {
+            dom.fileInput.click();
+        }
     } else {
         dom.fileInput.value = ''; 
         dom.fileInput.click();
@@ -148,13 +152,13 @@ dom.fileInput.onchange = (e) => {
             const newRules = JSON.parse(ev.target.result);
             if (!Array.isArray(newRules)) throw new Error();
             
-            chrome.storage.local.get(['clientConfig'], (res) => {
+            sys.storage.local.get(['clientConfig'], (res) => {
                 let existing = res.clientConfig || [];
                 const map = new Map();
                 existing.forEach(r => map.set(r.name.toLowerCase(), r));
                 newRules.forEach(r => { if(r.name) map.set(r.name.toLowerCase(), r); });
                 
-                chrome.storage.local.set({ clientConfig: Array.from(map.values()) }, () => {
+                sys.storage.local.set({ clientConfig: Array.from(map.values()) }, () => {
                     alert(i18n[currentLang].msg_imported);
                     loadRules();
                 });
@@ -174,7 +178,7 @@ function updateStatus(active) {
 }
 
 function loadRules() {
-    chrome.storage.local.get(['clientConfig'], (res) => {
+    sys.storage.local.get(['clientConfig'], (res) => {
         const rules = res.clientConfig || [];
         dom.list.innerHTML = '';
         if (rules.length === 0) {
@@ -204,7 +208,7 @@ function loadRules() {
 }
 
 function startEdit(i) {
-    chrome.storage.local.get(['clientConfig'], (res) => {
+    sys.storage.local.get(['clientConfig'], (res) => {
         const r = res.clientConfig[i];
         dom.name.value = r.name; dom.reason.value = r.reason; dom.ips.value = r.ips.join(', ');
         dom.editIdx.value = i;
@@ -217,10 +221,10 @@ function startEdit(i) {
 
 function deleteRule(i) {
     if (confirm(i18n[currentLang].msg_confirm_del)) {
-        chrome.storage.local.get(['clientConfig'], (res) => {
+        sys.storage.local.get(['clientConfig'], (res) => {
             const rules = res.clientConfig || [];
             rules.splice(i, 1);
-            chrome.storage.local.set({ clientConfig: rules }, loadRules);
+            sys.storage.local.set({ clientConfig: rules }, loadRules);
         });
     }
 }
