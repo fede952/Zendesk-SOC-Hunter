@@ -2,13 +2,16 @@
 <html>
 <head>
   <meta charset="UTF-8">
-  <link rel="stylesheet" href="styles.css"> <style>
+  <link rel="stylesheet" href="styles.css">
+  <style>
+    .io-group { display: flex; gap: 10px; margin-top: 10px; }
+    .io-btn { background: #f0f0f0; color: #333; border: 1px solid #ccc; font-size: 11px; padding: 6px; cursor: pointer; flex: 1; }
+    .io-btn:hover { background: #e0e0e0; }
     .lang-btn { background:transparent; border:1px solid #1f73b7; color:#1f73b7; font-size:10px; font-weight:bold; padding:2px 6px; border-radius:3px; cursor:pointer; margin-left:10px; }
     .lang-btn:hover { background: #e6f0f8; }
     body { width: 340px; padding: 15px; font-family: 'Segoe UI', sans-serif; background-color: #f4f6f8; color: #2f3941; }
     .header-row { display: flex; justify-content: space-between; align-items: center; border-bottom: 2px solid #e1e4e8; padding-bottom: 10px; margin-bottom: 15px;}
     h3 { margin: 0; color: #1f73b7; font-size: 16px; display:flex; align-items:center; }
-    
     .toggle-container { display: flex; align-items: center; gap: 8px; font-size: 12px; font-weight: bold; }
     .switch { position: relative; display: inline-block; width: 34px; height: 20px; }
     .switch input { opacity: 0; width: 0; height: 0; }
@@ -16,19 +19,15 @@
     .slider:before { position: absolute; content: ""; height: 14px; width: 14px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
     input:checked + .slider { background-color: #28a745; }
     input:checked + .slider:before { transform: translateX(14px); }
-
     label.field-label { font-size: 11px; font-weight: bold; display: block; margin-top: 10px; color: #555;}
     input[type="text"], textarea { width: 100%; border: 1px solid #cfd7df; border-radius: 4px; padding: 8px; box-sizing: border-box; font-size: 13px; font-family: sans-serif; margin-top: 4px;}
     textarea { height: 60px; font-family: monospace; resize: vertical; }
-    
     .btn-group { display: flex; gap: 10px; margin-top: 15px; }
     button { padding: 10px; border: none; border-radius: 4px; cursor: pointer; font-weight: bold; flex: 1; transition: 0.2s;}
-    
     #saveBtn { background: #1f73b7; color: white; }
     #saveBtn:hover { background: #144a75; }
     #cancelBtn { background: #e0e0e0; color: #333; display: none; }
     #resetPosBtn { background: #6c757d; color: white; width: 100%; margin-top: 5px; font-size: 11px; padding: 6px;}
-
     .rules-container { margin-top: 20px; border-top: 2px solid #e1e4e8; padding-top: 10px; max-height: 250px; overflow-y: auto;}
     .rule-item { background: white; padding: 10px; border: 1px solid #d8dcde; border-radius: 4px; margin-bottom: 8px; position: relative; box-shadow: 0 1px 2px rgba(0,0,0,0.05); }
     .rule-header { display: flex; justify-content: space-between; align-items: start; }
@@ -39,7 +38,6 @@
     .del-btn { color: #cc0000; } .del-btn:hover { background: #fff0f0; }
     .rule-reason { font-size: 11px; color: #68737d; margin: 4px 0; font-style: italic;}
     .rule-ips { font-size: 10px; font-family: monospace; color: #333; background: #eee; padding: 4px; border-radius: 3px; word-break: break-all;}
-    
     body.is-paused h3 { color: #999; }
     body.is-paused button#saveBtn { background-color: #999; pointer-events: none; }
     #statusLabel { margin-right: 5px; }
@@ -77,6 +75,13 @@
     <button id="saveBtn">Aggiungi Regola</button>
   </div>
   
+  <div class="io-group">
+      <button id="exportBtn" class="io-btn">💾 Export</button>
+      <button id="importBtn" class="io-btn">📂 Import</button>
+      <button id="deleteAllBtn" class="io-btn" style="background:#fff5f5; color:#dc3545; border-color:#dc3545;">🗑️ All</button>
+      <input type="file" id="fileInput" accept=".json" style="display:none">
+  </div>
+
   <button id="resetPosBtn">Reset Posizione Finestre</button>
 
   <div class="rules-container" id="rulesList"></div>

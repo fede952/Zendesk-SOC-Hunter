@@ -1,22 +1,8 @@
-console.log("🛡️ Hunter International");
+console.log("🛡️ Hunter 23.0 - Tower Stack Fixed");
 
 const tContent = {
-    it: {
-        found: "TROVATO",
-        none: "NESSUN INDICATORE",
-        other: "+ altri",
-        source: "Fonte",
-        monitor_list: "Elementi Monitorati",
-        detected_list: "Elementi Rilevati"
-    },
-    en: {
-        found: "FOUND",
-        none: "NO MATCH FOUND",
-        other: "+ others",
-        source: "Source",
-        monitor_list: "Monitored Items",
-        detected_list: "Detected Items"
-    }
+    it: { found: "TROVATO", none: "NESSUN INDICATORE", other: "+ altri", source: "Fonte", monitor_list: "Elementi Monitorati", detected_list: "Elementi Rilevati" },
+    en: { found: "FOUND", none: "NO MATCH FOUND", other: "+ others", source: "Source", monitor_list: "Monitored", detected_list: "Detected" }
 };
 
 // ==========================================
@@ -28,12 +14,13 @@ function normalizeString(str) {
 }
 
 function getCleanVisibleText() {
-    const clone = document.body.cloneNode(true);
-    const myAlerts = clone.querySelectorAll('.zh-alert-container');
-    myAlerts.forEach(el => el.remove());
-    const scripts = clone.querySelectorAll('script, style, noscript, svg, link, meta');
-    scripts.forEach(el => el.remove());
-    return clone.innerText; 
+    try {
+        return (document.title || "") + " " + (document.body ? document.body.innerText : "");
+    } catch (e) { return ""; }
+}
+
+function extractIpsFromText(text) {
+    return [...new Set(text.match(/\b(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g) || [])];
 }
 
 function isValidIp(str) { return /^(?:[0-9]{1,3}\.){3}[0-9]{1,3}$/.test(str); }
@@ -46,32 +33,107 @@ function isIpInCidr(ip, cidr) {
     return (ipToLong(ip) & mask) === (ipToLong(range) & mask);
   } catch (e) { return false; }
 }
-function extractIpsFromText(text) {
-  const ipv4Regex = /\b(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\.(?:25[0-5]|2[0-4][0-9]|[01]?[0-9][0-9]?)\b/g;
-  return [...new Set(text.match(ipv4Regex) || [])];
+
+// ==========================================
+// 2. SHADOW DOM MANAGER
+// ==========================================
+const HOST_ID = "zh-hunter-shadow-host";
+
+function getShadowRoot() {
+    let host = document.getElementById(HOST_ID);
+    if (!host) {
+        host = document.createElement('div');
+        host.id = HOST_ID;
+        host.style.cssText = "position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; z-index: 2147483647; pointer-events: none; overflow: hidden;";
+        document.body.appendChild(host);
+        
+        const shadow = host.attachShadow({ mode: 'open' });
+        
+        const style = document.createElement('style');
+        style.textContent = `
+            .zh-alert-container {
+                position: absolute; 
+                background: #fff;
+                border-left: 6px solid #888;
+                padding: 12px;
+                box-shadow: 0 5px 20px rgba(0,0,0,0.3);
+                font-family: 'Segoe UI', sans-serif;
+                border-radius: 4px;
+                font-size: 13px;
+                color: #333;
+                line-height: 1.3;
+                min-width: 250px;
+                min-height: 100px;
+                resize: both; 
+                overflow: hidden;
+                pointer-events: auto; 
+                box-sizing: border-box;
+                /* Animazione fluida per l'allineamento */
+                transition: top 0.2s ease-out, left 0.2s ease-out;
+            }
+            /* DRAGGING STATE: Disattiva transizione per movimento 1:1 */
+            .zh-alert-container.zh-dragging {
+                transition: none !important;
+                z-index: 999999 !important;
+                box-shadow: 0 15px 40px rgba(0,0,0,0.4);
+                cursor: grabbing;
+                opacity: 0.95;
+            }
+            .zh-header { display: flex; justify-content: space-between; margin-bottom: 5px; border-bottom: 1px solid #eee; padding-bottom: 5px; cursor: grab; user-select: none; }
+            .zh-alert-container.zh-dragging .zh-header { cursor: grabbing; }
+            .zh-title { font-weight: 800; font-size: 14px; text-transform: uppercase; }
+            .zh-close { cursor: pointer; font-weight: bold; padding: 0 5px; color: #999; }
+            .zh-close:hover { color: #333; }
+            .zh-reason { font-style: italic; color: #555; margin-bottom: 5px; display: block; }
+            .zh-source { font-size: 10px; color: #999; margin-bottom: 5px; text-align: right; }
+            .zh-badge { padding: 4px; text-align: center; font-weight: bold; border-radius: 3px; font-size: 11px; margin-bottom: 5px; border: 1px solid transparent; }
+            .badge-ok { background: #28a745; color: white; }
+            .badge-ko { background: #dc3545; color: white; }
+            .zh-ips-list { font-family: monospace; font-size: 11px; background: #f8f9fa; border: 1px solid #ddd; padding: 5px; margin-top: 5px; word-break: break-all; }
+            .zh-warning-banner {
+                position: absolute; top: 0; left: 0; width: 100%; background: #ffc107; color: #333; 
+                text-align: center; padding: 5px; font-weight: bold; font-size: 12px; z-index: 9999;
+                cursor: pointer; pointer-events: auto;
+            }
+        `;
+        shadow.appendChild(style);
+        return shadow;
+    }
+    return host.shadowRoot;
 }
 
 // ==========================================
-// 2. CORE LOGIC
+// 3. SCAN ENGINE
 // ==========================================
 
+let isScanning = false;
+
 function scanPage() {
-  if (!chrome.runtime?.id) return; 
+  if (isScanning) return;
+  isScanning = true;
+
+  if (typeof chrome === 'undefined') var chrome = browser;
+  if (!chrome.runtime?.id) { isScanning = false; return; }
 
   chrome.storage.local.get(['clientConfig', 'isPaused', 'lang'], (result) => {
-    if (chrome.runtime.lastError) return;
+    setTimeout(() => { isScanning = false; }, 500);
 
-    if (result.isPaused === true) {
-        removeAllAlerts();
+    if (chrome.runtime.lastError || result.isPaused === true) {
+        if (result.isPaused) removeAllAlerts();
         return;
     }
 
     const clients = result.clientConfig || [];
-    const currentLang = result.lang || 'it'; // Default IT
+    const lang = result.lang || 'it';
     
-    if (clients.length === 0) return;
+    if (clients.length === 0) {
+        showNoRulesWarning();
+        return;
+    } else {
+        removeNoRulesWarning();
+    }
 
-    const pageTextOriginal = getCleanVisibleText();
+    const pageTextOriginal = getCleanVisibleText(); 
     const pageTextLower = pageTextOriginal.toLowerCase();
     const pageTextNormalized = normalizeString(pageTextOriginal);
     const foundIpsOnPage = extractIpsFromText(pageTextOriginal);
@@ -84,12 +146,10 @@ function scanPage() {
         let nameFound = false;
         const configNameNormalized = normalizeString(client.name);
 
-        // Check Indicators
         if (client.ips && client.ips.length > 0) {
             client.ips.forEach(indicator => {
                 const cleanIndicator = indicator.trim();
                 if(!cleanIndicator) return;
-
                 if (isValidCidr(cleanIndicator)) {
                     foundIpsOnPage.forEach(pageIp => {
                         if (isIpInCidr(pageIp, cleanIndicator)) matches.push(`${pageIp} (CIDR)`);
@@ -108,7 +168,6 @@ function scanPage() {
             });
         }
 
-        // Check Name
         if (pageUrl.includes('zendesk.com')) {
             const zendeskSelectors = ['[data-test-id="generic-table-row"]', '[data-test-id="ticket-system-field-organization-value"]', '[data-test-id="customer-context-organization"]', '.ticket-fields', '[data-test-id="requester-field"]'];
             for (let sel of zendeskSelectors) {
@@ -117,7 +176,9 @@ function scanPage() {
                     if (normalizeString(el.innerText).includes(configNameNormalized)) nameFound = true;
                 });
             }
-        } else {
+        } 
+        
+        if (!nameFound) {
             if (pageTextNormalized.includes(configNameNormalized)) nameFound = true;
         }
 
@@ -127,120 +188,129 @@ function scanPage() {
         }
     });
 
-    // Clean old
-    document.querySelectorAll('.zh-alert-container').forEach(box => {
+    // Cleanup
+    const shadow = getShadowRoot();
+    shadow.querySelectorAll('.zh-alert-container').forEach(box => {
         if (!detectedClients.has(box.dataset.client)) box.remove();
     });
 
-    // Rendering Stack
+    const detectedArray = Array.from(detectedClients.values());
     let stackIndex = 0;
-    Array.from(detectedClients.values()).reverse().forEach((data) => {
-        updateAlertForClient(data.clientData, data.matches, data.foundByName, pageUrl, stackIndex, currentLang);
+    
+    detectedArray.forEach((data) => {
+        updateAlertForClient(data.clientData, data.matches, data.foundByName, pageUrl, stackIndex, lang);
         stackIndex++;
     });
     
-    alignSlaves();
+    if(detectedArray.length > 0) {
+        requestAnimationFrame(alignSlaves);
+    }
   });
 }
 
-function removeAllAlerts() {
-    document.querySelectorAll('.zh-alert-container').forEach(el => el.remove());
+// ==========================================
+// 4. UI RENDERER (Shadow DOM)
+// ==========================================
+
+function showNoRulesWarning() {
+    const shadow = getShadowRoot();
+    if(shadow.getElementById('zh-no-rules')) return;
+    const banner = document.createElement('div');
+    banner.id = 'zh-no-rules';
+    banner.className = 'zh-warning-banner';
+    banner.textContent = "⚠️ Hunter: Nessuna regola! Importa il file JSON.";
+    banner.onclick = () => banner.remove();
+    shadow.appendChild(banner);
 }
 
-chrome.storage.onChanged.addListener((changes, namespace) => {
-    if (namespace === 'local' && changes.isPaused) {
-        if (changes.isPaused.newValue === true) removeAllAlerts();
-        else scanPage();
-    }
-    // Reload on lang change
-    if (namespace === 'local' && changes.lang) {
-        scanPage();
-    }
-});
+function removeNoRulesWarning() {
+    const shadow = getShadowRoot();
+    const banner = shadow.getElementById('zh-no-rules');
+    if(banner) banner.remove();
+}
 
-// ==========================================
-// 3. UI ENGINE
-// ==========================================
+function removeAllAlerts() {
+    const shadow = getShadowRoot();
+    shadow.querySelectorAll('.zh-alert-container').forEach(el => el.remove());
+}
 
 function updateAlertForClient(client, matches, foundByName, sourcePage, stackIndex, lang) {
     const safeId = 'zh-alert-' + client.name.replace(/[^a-zA-Z0-9]/g, '');
-    let box = document.getElementById(safeId);
+    const shadow = getShadowRoot();
+    let box = shadow.getElementById(safeId);
     
     const isMaster = (stackIndex === 0); 
     const isMatch = matches.length > 0;
-    const labels = tContent[lang]; 
+    const labels = tContent[lang] || tContent['it']; 
 
     if (!box) {
         box = document.createElement('div');
         box.id = safeId;
         box.className = 'zh-alert-container';
         box.dataset.client = client.name;
-        document.body.appendChild(box);
+        
+        // default pos
+        box.style.left = (window.innerWidth - 270) + "px";
+        box.style.top = (window.innerHeight - 150) + "px";
+        
+        shadow.appendChild(box);
         
         box.addEventListener('click', (e) => {
-            if(e.target.classList.contains('zh-close')) {
+            const target = e.target;
+            if(target.classList.contains('zh-close')) {
                 box.remove();
                 setTimeout(scanPage, 500); 
             }
         });
 
+        makeDraggable(box);
+
         if (isMaster) {
             box.classList.add('zh-master');
-            makeDraggable(box);
-            new ResizeObserver(() => {
-                if (box.offsetWidth > 0) { savePosition(box); alignSlaves(); }
-            }).observe(box);
-
+            
+            if (typeof chrome === 'undefined') var chrome = browser;
             chrome.storage.local.get(['uiPos'], (res) => {
-                if (res.uiPos) {
+                if (res.uiPos && res.uiPos.top && res.uiPos.top !== "auto") {
                     box.style.top = res.uiPos.top;
                     box.style.left = res.uiPos.left;
                     box.style.width = res.uiPos.width;
                     box.style.height = res.uiPos.height;
-                    box.style.bottom = "auto";
-                    box.style.right = "auto";
-                } else {
-                    box.style.bottom = "20px";
-                    box.style.right = "20px";
-                    box.style.top = "auto";
-                    box.style.left = "auto";
                 }
                 alignSlaves(); 
             });
-
         } else {
             box.classList.add('zh-slave');
-            box.style.resize = 'none'; 
         }
     } else {
-        if (isMaster && !box.classList.contains('zh-master')) {
-             box.classList.remove('zh-slave');
-             box.classList.add('zh-master');
-             box.style.resize = 'both';
-             makeDraggable(box);
-             chrome.storage.local.get(['uiPos'], (res) => {
-                 if(res.uiPos) {
+        // Upgrade Role logic
+        if (isMaster) {
+            box.classList.add('zh-master');
+            box.classList.remove('zh-slave');
+            if (typeof chrome === 'undefined') var chrome = browser;
+            chrome.storage.local.get(['uiPos'], (res) => {
+                 if(res.uiPos && res.uiPos.top && res.uiPos.top !== "auto") {
                      box.style.top = res.uiPos.top;
                      box.style.left = res.uiPos.left;
-                     box.style.bottom = "auto";
-                     box.style.right = "auto";
                  }
+                 alignSlaves();
              });
+        } else {
+            box.classList.remove('zh-master');
+            box.classList.add('zh-slave');
         }
     }
 
-    box.classList.remove('match-success', 'match-fail');
-    box.classList.add(isMatch ? 'match-success' : 'match-fail');
+    // Colors & HTML
+    const borderColor = isMatch ? '#28a745' : '#dc3545';
+    const bgColor = isMatch ? '#f0fff4' : '#fff5f5';
+    box.style.borderLeft = `6px solid ${borderColor}`;
+    box.style.backgroundColor = bgColor;
 
-    // Building HTML with translations
-    let statusHTML = '';
-    
-    if (isMatch) {
-        statusHTML = `<div class="zh-badge badge-ok">✅ ${labels.found}: ${matches[0]}</div>`;
-        if (matches.length > 1) statusHTML += `<div style="font-size:10px; margin-top:2px">${labels.other} ${matches.length - 1}</div>`;
-    } else {
-        statusHTML = `<div class="zh-badge badge-ko">⚠️ ${labels.none}</div>`;
-    }
+    let statusHTML = isMatch 
+        ? `<div class="zh-badge badge-ok">✅ ${labels.found}: ${matches[0]}</div>` 
+        : `<div class="zh-badge badge-ko">⚠️ ${labels.none}</div>`;
+        
+    if (isMatch && matches.length > 1) statusHTML += `<div style="font-size:10px; margin-top:2px">${labels.other} ${matches.length - 1}</div>`;
 
     const dragIcon = isMaster ? '<span style="float:left; cursor:move; margin-right:5px">✥</span>' : '';
 
@@ -261,85 +331,113 @@ function updateAlertForClient(client, matches, foundByName, sourcePage, stackInd
     `;
 }
 
-function alignSlaves() {
-    const master = document.querySelector('.zh-alert-container.zh-master');
-    if (!master) return;
-    const slaves = document.querySelectorAll('.zh-alert-container.zh-slave');
-    const masterRect = master.getBoundingClientRect();
-    let currentBottomY = master.offsetTop; 
-    if (master.style.bottom !== "auto" && master.style.top === "auto") currentBottomY = masterRect.top;
+// ==========================================
+// 5. STACK LOGIC (TOWER UP)
+// ==========================================
 
-    slaves.forEach(slave => {
-        slave.style.width = master.style.width;
-        slave.style.left = masterRect.left + "px";
-        slave.style.right = "auto"; 
-        const slaveHeight = slave.offsetHeight || 100; 
-        const newTop = currentBottomY - slaveHeight - 10;
-        slave.style.top = newTop + "px";
-        slave.style.bottom = "auto";
-        currentBottomY = newTop;
+function alignSlaves() {
+    const shadow = getShadowRoot();
+    const master = shadow.querySelector('.zh-alert-container.zh-master');
+    if (!master) return;
+
+    const allBoxes = Array.from(shadow.querySelectorAll('.zh-alert-container'));
+    
+    // Master Rect
+    const mTop = master.offsetTop;
+    const mLeft = master.offsetLeft;
+    const mW = master.offsetWidth || 250;
+    
+    const GAP = 10;
+    
+    let currentTop = mTop;
+
+    allBoxes.forEach((box, index) => {
+        if (box === master) {
+            currentTop = mTop - GAP; 
+            return;
+        }
+
+        box.style.width = mW + "px";
+        box.style.left = mLeft + "px";
+        
+        const h = box.offsetHeight || 100;
+        const newTop = currentTop - h;
+        
+        box.style.top = newTop + "px";
+        
+        currentTop = newTop - GAP;
     });
 }
 
 // ==========================================
-// 4. DRAG & DROP
+// 6. DRAG LOGIC (ABSOLUTE MOUSE TRACKING)
 // ==========================================
 
 function makeDraggable(element) {
-    let pos1 = 0, pos2 = 0, pos3 = 0, pos4 = 0;
+    let startX, startY, initialLeft, initialTop;
+
     element.onmousedown = dragMouseDown;
 
     function dragMouseDown(e) {
-        if (e.target.classList.contains('zh-close') || e.target.closest('.zh-ips-list')) return;
-        if (!e.target.closest('.zh-header')) return;
-        e = e || window.event;
+        const path = e.composedPath();
+        if (path.some(el => el.classList && (el.classList.contains('zh-close') || el.classList.contains('zh-ips-list')))) return;
+        if (!path.some(el => el.classList && el.classList.contains('zh-header'))) return;
+
         e.preventDefault();
-        pos3 = e.clientX;
-        pos4 = e.clientY;
+        
+        startX = e.clientX;
+        startY = e.clientY;
+        
+        initialLeft = element.offsetLeft;
+        initialTop = element.offsetTop;
+        
+        element.classList.add('zh-dragging');
+        
         document.onmouseup = closeDragElement;
         document.onmousemove = elementDrag;
     }
 
     function elementDrag(e) {
-        e = e || window.event;
         e.preventDefault();
-        pos1 = pos3 - e.clientX;
-        pos2 = pos4 - e.clientY;
-        pos3 = e.clientX;
-        pos4 = e.clientY;
-        element.style.top = (element.offsetTop - pos2) + "px";
-        element.style.left = (element.offsetLeft - pos1) + "px";
+        
+        const dx = e.clientX - startX;
+        const dy = e.clientY - startY;
+        
+        element.style.top = (initialTop + dy) + "px";
+        element.style.left = (initialLeft + dx) + "px";
+        
         element.style.bottom = "auto"; 
         element.style.right = "auto";
-        alignSlaves();
+        
+        requestAnimationFrame(alignSlaves); 
     }
 
     function closeDragElement() {
         document.onmouseup = null;
         document.onmousemove = null;
+        element.classList.remove('zh-dragging');
         savePosition(element);
+        alignSlaves(); 
     }
 }
 
-function savePosition(element) {
-    const uiPos = {
-        top: element.style.top,
-        left: element.style.left,
-        width: element.style.width,
-        height: element.style.height
-    };
-    chrome.storage.local.set({ uiPos: uiPos });
+function savePosition(el) {
+    if (typeof chrome === 'undefined') var chrome = browser;
+    if (!el.style.top || el.style.top === "auto") return;
+
+    chrome.storage.local.set({ 
+        uiPos: { top: el.style.top, left: el.style.left, width: el.style.width, height: el.style.height } 
+    });
 }
 
-// ==========================================
-// 5. OBSERVER
-// ==========================================
-
+// Observer
 let timeout = null;
 const observer = new MutationObserver(() => {
-    clearTimeout(timeout);
+    if(timeout) clearTimeout(timeout);
     timeout = setTimeout(scanPage, 1000); 
 });
 
 observer.observe(document.body, { childList: true, subtree: true });
-setInterval(scanPage, 2500);
+if (typeof chrome === 'undefined') var chrome = browser;
+chrome.storage.onChanged.addListener((c, n) => { if (n === 'local') scanPage(); });
+setInterval(scanPage, 3000);
