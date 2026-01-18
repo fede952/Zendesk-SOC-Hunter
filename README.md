@@ -1,166 +1,106 @@
-🛡️ Zendesk SOC Hunter
+# 🛡️ Zendesk SOC Hunter
 
-Version: 1.0
+**The ultimate browser extension for SOC Analysts and Helpdesk support using Zendesk.**
 
-Compatibility: Google Chrome, Microsoft Edge, Mozilla Firefox
+Hunter automatically scans open tickets and web pages to identify monitored organizations, VIP clients, and specific indicators of compromise (IOCs) like IPs or malicious strings. It alerts the analyst immediately with a non-intrusive, draggable overlay.
 
-Tech Stack: JavaScript (ES6+), HTML5, CSS3, WebExtensions API (Manifest V3)
+![Version](https://img.shields.io/badge/version-23.1-blue.svg)
+![License](https://img.shields.io/badge/license-MIT-green.svg)
+![Browser](https://img.shields.io/badge/platform-Chrome%20%7C%20Edge%20%7C%20Firefox-orange)
 
-Zendesk SOC Hunter is a browser extension designed for SOC (Security Operations Center) analysts and Support Engineers. It acts as a passive radar that enriches the operational context by automatically detecting critical clients and Indicators of Compromise (IoC) on any webpage.
+## 📥 Download & Install
 
-While optimized for Zendesk (recognizing specific UI elements), it utilizes a "Hybrid Search" engine that works across standard web pages.
+| Browser | Store Link | Status |
+| :--- | :--- | :--- |
+| **Google Chrome / Edge** | [Download from Chrome Web Store](#) | *Pending* |
+| **Mozilla Firefox** | [Download from Firefox Add-ons](#) | *Pending* |
 
-🔍 1. Hybrid Threat Detection
+*(If the store links are not active yet, please check the "Manual Installation" section below)*
 
-The extension scans the DOM in real-time to identify:
+---
 
-    Organization Names: Detects if a ticket belongs to a critical VIP client.
+## ✨ Key Features
 
-    Technical Indicators: Automatically extracts IPs, subnets (CIDR), Hostnames, and malicious strings from the page text.
+* **Real-time Detection**: Automatically scans the page DOM for configured Organization names.
+* **IOC Matching**: Detects specific IP addresses (IPv4), CIDR ranges, and text strings defined in your rules.
+* **Shadow DOM UI**: The alert interface is built inside a Shadow DOM, ensuring no CSS conflicts with the host website (Zendesk, Google, etc.).
+* **Tower Stacking Logic**: Multiple alerts stack neatly from the bottom-right corner upwards.
+* **Draggable Interface**: Move alerts anywhere on the screen; the position is remembered for the session.
+* **JSON Rule Management**: Easily export and import your monitoring rules to share configuration across the team.
+* **Cross-Browser Support**: Fully compatible with Chrome, Edge, Brave, and Firefox.
 
-    Reverse Lookup: If a monitored IP (e.g., 1.1.1.1) appears on a generic log page, the extension identifies the associated Client/Organization.
+---
 
-🧠 2. Smart String Normalization
+## 🚀 How It Works
 
-Includes a fuzzy matching logic to handle data inconsistency.
+1.  **Install the extension**.
+2.  **Add Rules**: Open the extension popup. You can add a rule manually or import a JSON list.
+    * *Organization Name*: The string to search in the page text (e.g., "Acme Corp").
+    * *Reason*: A note for the analyst (e.g., "VIP Client", "Active Pentest").
+    * *Indicators*: Optional specific matches (e.g., "192.168.1.1", "malware.exe").
+3.  **Browse**: Navigate to a Zendesk ticket or any webpage.
+4.  **Get Alerted**: If a match is found, a popup will appear in the bottom-right corner.
+    * **Green Badge**: Exact IOC (IP/String) match found.
+    * **Red Badge**: Organization name match found (General Warning).
 
-    Configuration: Test Test
+---
 
-    Matches: Test-Test, testtest, Test_Test_SPA, Test.Test.
+## ⚙️ JSON Configuration Format
 
-    Mechanism: Removes punctuation, spaces, and casing before comparison.
+To import rules in bulk, use a `.json` file with the following structure:
 
-🌐 3. Advanced Networking Logic
+```json
+[
+  {
+    "name": "Acme Corp",
+    "reason": "VIP Client - Handle with care",
+    "ips": ["10.0.0.1", "192.168.0.0/24"]
+  },
+  {
+    "name": "Malicious Actor",
+    "reason": "Threat Intelligence match",
+    "ips": ["bad-domain.com", "1.1.1.1"]
+  }
+]
+```
+## 🛠️ Manual Installation (Developer Mode)
 
-    CIDR Support: Native calculation of IPv4 subnets. If you monitor 192.168.0.0/24, it detects 192.168.0.55.
+If you want to test the latest version from this repository:
 
-    IPv4 Extraction: Regex-based extraction of valid IP patterns from the page body.
+Chrome / Edge:
 
-🎨 4. "Magnetic Stack" UI
+    Clone this repository or download the ZIP.
 
-    Master/Slave System: Multiple alerts stack automatically.
+    Go to chrome://extensions.
 
-    Draggable: The bottom-most alert (Master) can be dragged, and all stacked alerts follow.
+    Enable Developer mode (top right).
 
-    Resizable: Supports resizing to view long lists of IPs.
+    Click Load unpacked.
 
-    Persistent: Remembers the window position across page reloads.
+    Select the folder containing manifest.json.
 
-🌍 5. Internationalization & Safety
+Firefox:
 
-    Bilingual: Full English/Italian support (hot-swappable).
+    Go to about:debugging#/runtime/this-firefox.
 
-    Security: Built with DOM Safe Mode (no innerHTML usage) to prevent XSS and pass Mozilla Firefox validation.
-
-    Privacy: All data is stored in chrome.storage.local. No external API calls.
-
-🚀 Installation
-Google Chrome / Microsoft Edge
-
-    Download the project source code (or unzip the release).
-
-    Go to chrome://extensions (or edge://extensions).
-
-    Enable Developer Mode (top right switch).
-
-    Click Load Unpacked.
-
-    Select the project folder.
-
-Mozilla Firefox
-
-    Go to about:debugging.
-
-    Click This Firefox.
-
-    Click Load Temporary Add-on.
+    Click Load Temporary Add-on....
 
     Select the manifest.json file.
 
-⚙️ Configuration
+## 🤝 Contributing
 
-Click the extension icon in the browser toolbar to open the configuration panel.
-Adding a Rule
+Contributions are welcome! Please feel free to submit a Pull Request.
 
-    Organization Name: The name of the client to monitor (e.g., "Ferrari").
+    Fork the project.
 
-    Monitoring Reason: Context for the analyst (e.g., "Penetration Test in progress").
+    Create your Feature Branch (git checkout -b feature/AmazingFeature).
 
-    Indicators: A comma-separated list of technical data.
+    Commit your changes (git commit -m 'Add some AmazingFeature').
 
-        IPs: 10.0.0.1
+    Push to the Branch (git push origin feature/AmazingFeature).
 
-        Subnets: 192.168.0.0/24
-
-        Strings/Hosts: malware.exe, evil-site.com
-
-Controls
-
-    Pause/Resume: Toggle the switch in the header to globally disable/enable the scanner.
-
-    Language (IT/EN): Switch UI language.
-
-    Reset Position: If the alert box disappears off-screen, click this to reset it to the bottom-right corner.
-
-🛠️ Technical Architecture
-manifest.json
-
-Defines the extension capabilities using Manifest V3.
-
-    Permissions: storage (for rules/settings).
-
-    Host Permissions: <all_urls> (to scan Zendesk, SIEMs, and logs).
-
-    Browser Specific: Includes Gecko ID for Firefox compatibility.
-
-content.js (The Engine)
-
-Injected into every page, it performs the following loop (every ~1-2 seconds):
-
-    Clean: Clones the <body> and removes scripts, styles, and the extension's own UI to prevent self-matching loops.
-
-    Extract: Finds all IPv4 addresses using Regex.
-
-    Normalize: Converts page text to a lowercase, punctuation-free string.
-
-    Match: Compares extracted data against the clientConfig in local storage using bitwise operators for CIDR and string inclusion for names.
-
-    Render: Draws the "Magnetic Stack" UI using document.createElement (Safe DOM).
-
-popup.js (The Interface)
-
-Handles the configuration UI.
-
-    Manages the CRUD operations for rules.
-
-    Handles Internationalization (i18n).
-
-    Communicates with chrome.storage.local.
-
-styles.css
-
-Contains the styling for the Alert Box (.zh-alert-container).
-
-    Uses z-index: 2147483647 to ensure visibility.
-
-    Implements resize: both and cursor: move for UX.
-
-    Defines color coding:
-
-        🟢 Green Border: Strong Match (Specific IP/Indicator found).
-
-        🔴 Red Border: Weak Match (Client name found, but no technical indicators present).
-
-🔒 Privacy & Security
-
-    Zero Exfiltration: This extension does not send data to the cloud. All rules and logs remain in the user's browser Local Storage.
-
-    DOM Safety: The code is strictly typed to avoid innerHTML assignments, protecting against Cross-Site Scripting (XSS) attacks.
-
-    Performance: Uses MutationObserver with debouncing to minimize CPU usage on heavy Single Page Applications (SPAs) like Zendesk.
+    Open a Pull Request.
 
 ## 📄 License
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
-
-Copyright © 2026 Federico Sella
+Distributed under the MIT License. See LICENSE for more information.
