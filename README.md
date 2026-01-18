@@ -1,6 +1,6 @@
 # 🛡️ Zendesk SOC Hunter
 
-**The ultimate browser extension for SOC Analysts and Helpdesk support using Zendesk.**
+**The browser extension for SOC Analysts and Helpdesk support using Zendesk.**
 
 Hunter automatically scans open tickets and web pages to identify monitored organizations, VIP clients, and specific indicators of compromise (IOCs) like IPs or malicious strings. It alerts the analyst immediately with a non-intrusive, draggable overlay.
 
