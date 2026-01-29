@@ -14,6 +14,8 @@ Hunter automatically scans open tickets and web pages to identify monitored orga
 | :--- | :--- | :--- |
 | **Google Chrome** | [Download from Chrome Web Store](https://chromewebstore.google.com/detail/zendesk-soc-hunter/dafanghmcdcjnokckceghaajgbehffmn) | *Online* |
 | **Mozilla Firefox** | [Download from Firefox Add-ons](https://addons.mozilla.org/en-US/firefox/addon/zendesk-soc-hunter/) | *Online* |
+| **Microsoft Edge** | [Download from Firefox Add-ons](#) | *Waiting* |
+
 
 ---
 
